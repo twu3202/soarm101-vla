@@ -1,0 +1,35 @@
+# ===== derived / heavy artifacts — never commit =====
+runs/
+outputs/
+vla_data/
+checkpoints/
+traces/
+videos/
+cam_snaps/
+
+# caches / compiled
+__pycache__/
+*.pyc
+*.pyo
+
+# large binaries / data / models
+*.mp4
+*.npz
+*.pt
+*.pth
+*.ckpt
+*.pkl
+*.safetensors
+*.h5
+
+# logs / backups
+*.log
+*.bak
+*.bak_*
+
+# local agent / editor / OS
+.claude/
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store

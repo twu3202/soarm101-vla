@@ -1,0 +1,120 @@
+<mujoco model="so101_sort5">
+  <!--
+    SO-ARM101 + 5 colored sorting cubes scene.
+
+    Sort target order (left → right along +y): RED, ORANGE, YELLOW, GREEN, BLUE.
+    Workspace: x ∈ [+0.10, +0.32] m in front of arm base.
+    Targets:   x = +0.30 m (back row), y = -0.10..+0.10 m spaced 5 cm.
+    Cube spawn: random in x ∈ [+0.12, +0.22], y ∈ [-0.12, +0.12] (sampled in env.reset).
+
+    NOTE: include path is absolute on purpose so we never modify the menagerie source.
+    MuJoCo resolves <include>'s own asset/meshdir relative to that file's directory.
+  -->
+  <include file="D:/soarm101/menagerie/robotstudio_so101/so101.xml"/>
+
+  <option timestep="0.005" integrator="implicitfast" cone="elliptic" iterations="20" ls_iterations="30" impratio="10"/>
+
+  <visual>
+    <headlight diffuse="0.55 0.55 0.55" ambient="0.35 0.35 0.35" specular="0.1 0.1 0.1"/>
+    <rgba haze="0.15 0.20 0.27 1"/>
+    <global azimuth="135" elevation="-25" offwidth="640" offheight="480"/>
+    <map znear="0.005" zfar="5"/>
+    <quality shadowsize="2048"/>
+  </visual>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.30 0.50 0.70" rgb2="0.0 0.0 0.0" width="512" height="3072"/>
+    <texture type="2d" name="tabletex" builtin="checker" mark="edge"
+             rgb1="0.85 0.85 0.85" rgb2="0.75 0.75 0.75" markrgb="0.5 0.5 0.5"
+             width="300" height="300"/>
+    <material name="table_mat" texture="tabletex" texrepeat="6 6" texuniform="true" reflectance="0.05"/>
+
+    <material name="cube_red"    rgba="0.85 0.10 0.10 1"/>
+    <material name="cube_orange" rgba="0.95 0.50 0.10 1"/>
+    <material name="cube_yellow" rgba="0.95 0.90 0.10 1"/>
+    <material name="cube_green"  rgba="0.15 0.75 0.20 1"/>
+    <material name="cube_blue"   rgba="0.10 0.30 0.85 1"/>
+
+    <!-- semi-transparent target slot markers -->
+    <material name="slot_red"    rgba="0.85 0.10 0.10 0.35"/>
+    <material name="slot_orange" rgba="0.95 0.50 0.10 0.35"/>
+    <material name="slot_yellow" rgba="0.95 0.90 0.10 0.35"/>
+    <material name="slot_green"  rgba="0.15 0.75 0.20 0.35"/>
+    <material name="slot_blue"   rgba="0.10 0.30 0.85 0.35"/>
+  </asset>
+
+  <default>
+    <default class="sort_cube">
+      <!-- 25mm cubes; friction tuned high enough for parallel-jaw gripping -->
+      <geom type="box" size="0.0125 0.0125 0.0125" mass="0.020"
+            condim="4" friction="1.2 0.01 0.001" priority="0" solref="0.005 1"/>
+    </default>
+    <default class="sort_slot">
+      <!-- visual-only target zone markers (no collision) -->
+      <geom type="cylinder" size="0.018 0.0005" contype="0" conaffinity="0" group="2"/>
+    </default>
+  </default>
+
+  <worldbody>
+    <!-- main directional light (will be DR-jittered from env) -->
+    <light name="main_light" pos="0.3 0.0 1.2" dir="-0.1 0 -1" directional="true" diffuse="0.6 0.6 0.6"/>
+    <light name="fill_light" pos="-0.2 0.4 0.8" dir="0.2 -0.4 -0.8" directional="true" diffuse="0.25 0.25 0.25"/>
+
+    <!-- tabletop: infinite plane at z=0, table extends only visually below cubes -->
+    <geom name="floor" type="plane" size="0 0 0.02" pos="0 0 0" material="table_mat"
+          condim="3" friction="1.0 0.005 0.0001"/>
+
+    <!-- target-slot visual markers (5 slots in a row at x=+0.30 m) -->
+    <body name="slot_red"    pos="0.30 -0.10 0.0006"><geom class="sort_slot" material="slot_red"/></body>
+    <body name="slot_orange" pos="0.30 -0.05 0.0006"><geom class="sort_slot" material="slot_orange"/></body>
+    <body name="slot_yellow" pos="0.30  0.00 0.0006"><geom class="sort_slot" material="slot_yellow"/></body>
+    <body name="slot_green"  pos="0.30  0.05 0.0006"><geom class="sort_slot" material="slot_green"/></body>
+    <body name="slot_blue"   pos="0.30  0.10 0.0006"><geom class="sort_slot" material="slot_blue"/></body>
+
+    <!-- 5 cubes, each with a free joint. Initial poses are placeholders;
+         env.reset() rewrites their qpos every episode. -->
+    <body name="cube_red" pos="0.15 -0.10 0.0135">
+      <freejoint name="cube_red_free"/>
+      <geom name="cube_red_geom"    class="sort_cube" material="cube_red"/>
+    </body>
+    <body name="cube_orange" pos="0.15 -0.05 0.0135">
+      <freejoint name="cube_orange_free"/>
+      <geom name="cube_orange_geom" class="sort_cube" material="cube_orange"/>
+    </body>
+    <body name="cube_yellow" pos="0.15  0.00 0.0135">
+      <freejoint name="cube_yellow_free"/>
+      <geom name="cube_yellow_geom" class="sort_cube" material="cube_yellow"/>
+    </body>
+    <body name="cube_green" pos="0.15  0.05 0.0135">
+      <freejoint name="cube_green_free"/>
+      <geom name="cube_green_geom"  class="sort_cube" material="cube_green"/>
+    </body>
+    <body name="cube_blue" pos="0.15  0.10 0.0135">
+      <freejoint name="cube_blue_free"/>
+      <geom name="cube_blue_geom"   class="sort_cube" material="cube_blue"/>
+    </body>
+
+    <!--
+      Front camera: roughly aligned to where a real RealSense would sit
+      (~50 cm forward of base, 35 cm high, tilted down toward workspace center).
+      env wrapper can DR-jitter pos / euler / fov on reset().
+    -->
+    <camera name="front_cam" mode="fixed"
+            pos="0.55 0.0 0.32"
+            xyaxes="0 1 0  -0.55 0 0.83"
+            fovy="55" resolution="640 480"/>
+
+    <!-- A diagnostic 3rd-person camera for debug renders / videos. -->
+    <camera name="debug_cam" mode="fixed"
+            pos="0.45 -0.55 0.50"
+            xyaxes="0.78 0.62 0  -0.30 0.38 0.87"
+            fovy="50" resolution="640 480"/>
+  </worldbody>
+
+  <!--
+    NB:
+    - wrist_cam is already defined inside so101_patched.xml on the gripper body.
+    - Actuators are inherited from so101_patched.xml (6 position actuators on the arm joints).
+    - We do NOT redefine any existing element to keep the include strict.
+  -->
+</mujoco>
