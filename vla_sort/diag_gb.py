@@ -57,19 +57,23 @@ print("per-joint mean abs error (deg):", np.round(errs.mean(0), 2))
 print("OVERALL mean abs action error: %.2f deg" % errs.mean())
 print("(<~3-5 deg = learned demos well; >~15 deg = undertrained/ungrounded)")
 
-# ---------- (2) camera ablation ----------
-print("\n=== (2) CAMERA ABLATION (hold state fixed; blank one camera; measure action change) ===")
-mid = ds[idxs[len(idxs) // 2]]
-top = np.asarray(mid["observation.images.top"])
-wrist = np.asarray(mid["observation.images.wrist"])
-state = np.asarray(mid["observation.state"], dtype=np.float32).reshape(-1)
-a_both = infer(top, wrist, state)[0]
-a_no_top = infer(np.zeros_like(top), wrist, state)[0]
-a_no_wrist = infer(top, np.zeros_like(wrist), state)[0]
-d_top = np.abs(a_both - a_no_top).mean()
-d_wrist = np.abs(a_both - a_no_wrist).mean()
-print("  action (both real)   :", np.round(a_both, 1))
-print("  action (top blanked) :", np.round(a_no_top, 1), f"  -> |Δ| mean {d_top:.2f} deg")
-print("  action (wrist blanked):", np.round(a_no_wrist, 1), f"  -> |Δ| mean {d_wrist:.2f} deg")
-print(f"\n  TOP   sensitivity: {d_top:.2f} deg   WRIST sensitivity: {d_wrist:.2f} deg")
-print("  ( >~5 deg each => policy uses that camera; ~0 => it ignores it )")
+# ---------- (2) camera ablation (across the trajectory) ----------
+print("\n=== (2) CAMERA ABLATION (hold state+other cam fixed; blank one camera; |Δaction|) ===")
+print("  (top should matter most EARLY = locating the cube; wrist most MID/LATE = grasp)")
+tops, wrists = [], []
+for i in idxs:
+    s = ds[i]
+    top = np.asarray(s["observation.images.top"])
+    wrist = np.asarray(s["observation.images.wrist"])
+    state = np.asarray(s["observation.state"], dtype=np.float32).reshape(-1)
+    a_both = infer(top, wrist, state)[0]
+    d_top = np.abs(a_both - infer(np.zeros_like(top), wrist, state)[0]).mean()
+    d_wrist = np.abs(a_both - infer(top, np.zeros_like(wrist), state)[0]).mean()
+    tops.append(d_top)
+    wrists.append(d_wrist)
+    frac = i / (n - 1)
+    print(f"  frame {i:4d} ({frac:4.0%} thru): TOP Δ={d_top:5.2f}  WRIST Δ={d_wrist:5.2f} deg")
+tops, wrists = np.array(tops), np.array(wrists)
+print(f"\n  TOP   sensitivity: mean {tops.mean():.2f}  max {tops.max():.2f} deg")
+print(f"  WRIST sensitivity: mean {wrists.mean():.2f}  max {wrists.max():.2f} deg")
+print("  ( a camera is USED if its Δ is clearly >0 somewhere along the trajectory )")

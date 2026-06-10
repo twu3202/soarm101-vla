@@ -65,18 +65,31 @@ learning signal has to come from somewhere.
 - **Training:** LoRA fine-tune from `pi05_base`, batch 32, 4000 steps (~45 epochs), checkpoint every
   1000 steps, on a single RTX 6000 Ada (48 GB).
 
-<!-- RESULTS_PLACEHOLDER: filled in after offline validation (diag_gb.py) -->
+Training converged cleanly: loss 0.083 → **0.0034** by step ~3900, grad-norm ~0.05.
+
 **Offline validation** (`vla_sort/diag_gb.py`, no arm required):
 
-| Checkpoint | Teacher-forcing err (deg) | Top-cam sensitivity (deg) | Wrist-cam sensitivity (deg) |
+| Checkpoint | Teacher-forcing err | Top-cam sensitivity (mean / max) | Wrist-cam sensitivity (mean / max) |
 |---|---|---|---|
-| _to be filled_ | | | |
+| step 2000 | **0.76°** | 1.18° / 2.61° | 2.51° / 6.07° |
+| step 3999 (final) | **0.54°** | 0.95° / 2.41° | 2.43° / 5.83° |
 
-- **Teacher-forcing**: predicted vs. ground-truth action on demo frames — low ⇒ learned the demos.
-- **Camera ablation**: blank one camera, measure action change — large for *both* ⇒ uses top *and* wrist.
+- **Teacher-forcing** (predicted vs. ground-truth action on demo frames): **~0.5–0.8°** — the policy
+  reproduces the demos almost exactly (vs. 1.87° for the earlier 1-cam 5-cube sort). It *learned the
+  demos*.
+- **Camera ablation** (blank one camera, hold state + the other camera fixed, measure |Δaction|):
+  both cameras are used, with a sensible **division of labor** —
+  - **TOP** peaks **early** (max 2.4° at the first frame) → coarse cube localization;
+  - **WRIST** peaks **at the grasp** (max 5.8–6.1° mid-trajectory) → fine alignment; blanking the
+    wrist collapses the gripper-close command (26° → 0°), i.e. the wrist drives the actual grasp.
+- **Overfit note:** step 2000 has slightly higher TF error *and* slightly higher camera
+  sensitivity than the final step 3999 — i.e. it's a bit less memorized and a bit more
+  vision-reliant, so it may generalize **better** in closed loop. Recommend trying **both** on the arm.
 
-> **Real-arm deploy** is the final test and requires the physical arm + operator; it is **not** part
-> of the automated validation here. Run `vla_sort/so101_vla_deploy.py` (below) to test on hardware.
+> **Real-arm deploy is the final test** and requires the physical arm + operator; it is **not** part
+> of this offline validation. What the offline metrics *do* establish: the model learned the demos
+> and uses both cameras. Whether 10 demos + the wrist camera is enough to cross 0% → "occasionally
+> grasps" in closed loop is answered only by running `vla_sort/so101_vla_deploy.py` on hardware.
 
 ---
 
