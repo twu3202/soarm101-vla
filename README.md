@@ -93,6 +93,23 @@ Training converged cleanly: loss 0.083 → **0.0034** by step ~3900, grad-norm ~
 
 ---
 
+## Data and models on Hugging Face
+
+| | |
+|---|---|
+| [`Twu31/so101_green_bowl`](https://huggingface.co/datasets/Twu31/so101_green_bowl) | **The 10 two-camera demos used here** (top + wrist, 2,851 frames) |
+
+Related work on the same arm — a task where the demo budget *was* large enough:
+
+| | |
+|---|---|
+| [`Twu31/so101_hand_blue_napkin`](https://huggingface.co/datasets/Twu31/so101_hand_blue_napkin) | 101 demos of a handover task |
+| [`Twu31/smolvla-so101-blue-napkin-160k`](https://huggingface.co/Twu31/smolvla-so101-blue-napkin-160k) | SmolVLA trained on those 101 demos — **80%+ real-arm success** |
+| [twu3202/soarm101-offline-rl-experiments](https://github.com/twu3202/soarm101-offline-rl-experiments) | Offline RL on those demos: 51% better offline MSE, **0% on the real arm** |
+
+The contrast is the point of this repo: 101 demos → a working policy; 10 demos → ~20% at best,
+even with a wrist camera and a much larger pretrained VLA.
+
 ## Repository layout
 
 ```
