@@ -33,3 +33,9 @@ __pycache__/
 .idea/
 Thumbs.db
 .DS_Store
+
+# autonomous-session research logs — kept locally, not published
+OVERNIGHT_PROGRESS.md
+maniskill/OVERNIGHT_LOG.md
+maniskill/PATHB_LOG.md
+maniskill/PROJECT_REPORT.md
