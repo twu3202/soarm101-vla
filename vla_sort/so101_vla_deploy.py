@@ -36,6 +36,7 @@ def main():
     p.add_argument("--wrist_index", type=int, default=1, help="WRIST (gripper) camera cv2 index")
     p.add_argument("--prompt", default="Put the green cube in the bowl")
     p.add_argument("--exec_horizon", type=int, default=5, help="actions to run before re-infer (tight loop = less drift)")
+    p.add_argument("--smooth", type=float, default=1.0, help="EMA weight on new target for the 5 ARM joints (1.0=off; 0.5 halves jitter). Gripper is NOT smoothed.")
     p.add_argument("--hz", type=float, default=30.0, help="control rate; dataset is 30fps so 30 matches training")
     p.add_argument("--max_cycles", type=int, default=200)
     p.add_argument("--home", default="none", help="comma joint deg to reset to before inference; 'none' to skip")
@@ -94,6 +95,7 @@ def main():
         print("at home; starting policy.")
 
     period = 1.0 / args.hz
+    q_prev = None  # last sent target, for optional EMA smoothing of the arm joints
     try:
         for cyc in range(args.max_cycles):
             obs = robot.get_observation()
@@ -116,7 +118,13 @@ def main():
                       f"state=[{','.join(f'{x:+.1f}' for x in state)}]  "
                       f"act0=[{','.join(f'{x:+.1f}' for x in actions[0])}]")
             for a in actions[:n]:
-                robot.send_action({f"{j}.pos": float(a[i]) for i, j in enumerate(JOINTS)})
+                if args.smooth < 1.0 and q_prev is not None:
+                    q = np.asarray(a, dtype=np.float32).copy()
+                    q[:5] = args.smooth * q[:5] + (1.0 - args.smooth) * q_prev[:5]  # EMA arm joints; gripper crisp
+                else:
+                    q = np.asarray(a, dtype=np.float32)
+                robot.send_action({f"{j}.pos": float(q[i]) for i, j in enumerate(JOINTS)})
+                q_prev = q
                 time.sleep(period)
     except KeyboardInterrupt:
         print("\ninterrupted.")
